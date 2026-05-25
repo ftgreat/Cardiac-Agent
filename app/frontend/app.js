@@ -1,6 +1,7 @@
 // 配置
 // const API_BASE_URL = `${window.location.protocol}//${window.location.hostname}:8005`;
-const API_BASE_URL = `http://42.228.13.157:40330`;
+// const API_BASE_URL = `http://42.228.13.157:40330`;
+const API_BASE_URL = `http://115.191.21.142:8005`;
 
 // 状态
 let selectedFiles = [];
