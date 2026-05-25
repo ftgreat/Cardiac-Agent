@@ -18,6 +18,41 @@ from serve.constants import LOGDIR
 
 server_error_msg = "**NETWORK ERROR DUE TO HIGH TRAFFIC. PLEASE REGENERATE OR REFRESH THIS PAGE.**"
 
+
+def setup_flaggems(record=True, once=True, path="/root/gems.txt"):
+    """Enable FlagGems operator dispatch if USE_FLAGGEMS env is set.
+
+    Call this after model loading and before inference to ensure all
+    aten ops are overridden with FlagGems Triton kernels.
+    """
+    if os.getenv("USE_FLAGGEMS", "false").lower() in ("1", "true", "yes"):
+        import flag_gems
+        import logging as _logging
+        used = ["ones", "cumsum", "polar", "repeat", "arange_start", "full", "lt_scalar", "true_divide", "where_self", "ge_scalar", "random_", "ones_like", "floor_divide", "bincount", "resolve_neg", "mean_dim_comm", "relu_", "clamp_", "embedding", "softmax", "clamp", "sub", "uniform_"]
+        #used = ["lt_scalar", "ge_scalar",]
+        flag_gems.only_enable(record=record, once=once, path=path, include=used)
+        fg_logger = _logging.getLogger("flag_gems")
+        for h in fg_logger.handlers:
+            if isinstance(h, _logging.FileHandler):
+                h.stream.reconfigure(line_buffering=True)
+                # Protect this handler from logging.shutdown() / dictConfig
+                # which iterates _handlerList and closes all handlers.
+                # Remove our handler's weak-ref from the global list so
+                # _clearExistingHandlers() cannot find and close it.
+                _logging._acquireLock()
+                try:
+                    _logging._handlerList[:] = [
+                        ref for ref in _logging._handlerList
+                        if ref() is not h
+                    ]
+                    _logging._handlers.pop(h, None)
+                finally:
+                    _logging._releaseLock()
+        fg_logger.debug("SETUP_FLAGGEMS: handler verified working")
+        print(f"[flag_gems] enabled, record={record}, once={once}, path={path}", file=sys.stderr)
+        return True
+    return False
+
 handler = None
 visited_loggers = set()
 

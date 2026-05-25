@@ -4,6 +4,7 @@ A model worker executes the model.
 import argparse
 import asyncio
 import json
+import os
 import time
 import threading
 import uuid
@@ -18,7 +19,7 @@ import uvicorn
 from functools import partial
 
 from serve.constants import WORKER_HEART_BEAT_INTERVAL
-from serve.utils import build_logger, server_error_msg, pretty_print_semaphore
+from serve.utils import build_logger, server_error_msg, pretty_print_semaphore, setup_flaggems
 from llava.model.builder import load_pretrained_model
 from llava.mm_utils import process_images, load_image_from_base64, tokenizer_image_token, KeywordsStoppingCriteria
 from llava.constants import IMAGE_TOKEN_INDEX, DEFAULT_IMAGE_TOKEN, DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN
@@ -307,6 +308,11 @@ class ModelWorker:
 
 
 app = FastAPI()
+
+
+@app.on_event("startup")
+async def startup_event():
+    setup_flaggems()
 
 
 def release_model_semaphore(fn=None):
